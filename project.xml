@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://lime.software/project/1.0.2"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://lime.software/project/1.0.2 http://lime.software/xsd/project-1.0.2.xsd">
+
+    <!-- ===============================================================
+         APPLICATION INFO
+    ================================================================== -->
+    <app title="Hybrid Engine"
+         package="com.hybrid.engine"
+         version="1.0.0"
+         company="YourName" />
+
+    <window width="1280" height="720" fps="60" allow-high-dpi="true" />
+
+    <!-- Enable hardware rendering for Stage3D / OpenGL -->
+    <haxedef name="openfl_disable_display_shader" />
+    <haxedef name="lime-opengl" />
+
+    <!-- ===============================================================
+         SOURCE CODE
+    ================================================================== -->
+    <source path="source" />
+    <source path="source/stages" />
+    <source path="source/play" />
+    <source path="source/objects" />
+    <source path="source/rendering" />
+    <source path="source/backend" />
+    <source path="source/editors" />
+    <source path="source/play/script" />
+
+    <!-- Auto-import Haxe scripts -->
+    <haxelib name="hscript" />
+    <haxelib name="hxcodec" />
+    <haxelib name="flixel" />
+    <haxelib name="openfl" />
+    <haxelib name="lime" />
+    <haxelib name="actuate" />
+
+    <!-- ===============================================================
+         ASSETS + MOD SUPPORT
+    ================================================================== -->
+    <assets path="assets" rename="assets" exclude="*.psd" />
+    <assets path="mods" rename="mods" />
+    <assets path="save" rename="save" if="desktop" />
+
+    <!-- Allow external mod loading -->
+    <haxedef name="MOD_SUPPORT" />
+
+    <!-- ===============================================================
+         ICONS
+    ================================================================== -->
+    <icon path="assets/icons/icon.png" />
+
+    <!-- ===============================================================
+         PLATFORM RULES
+    ================================================================== -->
+
+    <!-- WINDOWS -->
+    <section if="windows">
+        <app file="HybridEngine" />
+    </section>
+
+    <!-- HTML5 -->
+    <section if="html5">
+        <haxedef name="webgl" />
+        <haxedef name="lime-webgl2" />
+        <haxedef name="openfl-html5" />
+    </section>
+
+    <!-- ANDROID -->
+    <section if="android">
+        <android target-sdk-version="33" />
+        <haxedef name="android-internal-mods" />
+    </section>
+
+    <!-- MAC + LINUX / CASE CORRECTION -->
+    <haxedef name="casefold" />
+
+</project>

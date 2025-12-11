@@ -37,4 +37,8 @@ class CharacterManager {
     public function beatHit(curBeat:Int) {
         for (c in characters) c.beatHit(curBeat);
     }
+    public function playAnimOn(id:String, anim:String) {
+    if (characters.exists(id))
+        characters[id].playAnim(anim);
+    }
 }

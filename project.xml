@@ -1,80 +1,120 @@
 <?xml version="1.0" encoding="utf-8"?>
-<project xmlns="http://lime.software/project/1.0.2"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://lime.software/project/1.0.2 http://lime.software/xsd/project-1.0.2.xsd">
+<project xmlns="http://lime.openfl.org/project/1.0.2"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-    <!-- ===============================================================
-         APPLICATION INFO
-    ================================================================== -->
-    <app title="Hybrid Engine"
-         package="com.hybrid.engine"
-         version="1.0.0"
-         company="YourName" />
+    <!-- ==========================================================
+         PROJECT METADATA
+         ========================================================== -->
+    <meta title="Hybrid FNF Engine"
+          package="com.hybrid.fnf"
+          version="1.0.0"
+          company="HybridEngineTeam" />
 
-    <window width="1280" height="720" fps="60" allow-high-dpi="true" />
+    <app main="Main" path="export" file="HybridEngine" />
 
-    <!-- Enable hardware rendering for Stage3D / OpenGL -->
-    <haxedef name="openfl_disable_display_shader" />
-    <haxedef name="lime-opengl" />
+    <!-- Window settings -->
+    <window width="1280" height="720" fps="60"
+            hardware="true" vsync="false"
+            allow-shaders="true"
+            allow-high-dpi="true"
+            resizable="true" />
 
-    <!-- ===============================================================
-         SOURCE CODE
-    ================================================================== -->
-    <source path="source" />
-    <source path="source/stages" />
-    <source path="source/play" />
-    <source path="source/objects" />
-    <source path="source/rendering" />
-    <source path="source/backend" />
-    <source path="source/editors" />
-    <source path="source/play/script" />
-
-    <!-- Auto-import Haxe scripts -->
-    <haxelib name="hscript" />
-    <haxelib name="hxcodec" />
-    <haxelib name="flixel" />
-    <haxelib name="openfl" />
+    <!-- ==========================================================
+         LANGUAGE + COMPILER SETTINGS
+         ========================================================== -->
     <haxelib name="lime" />
-    <haxelib name="actuate" />
+    <haxelib name="openfl" />
+    <haxelib name="flixel" />
+    <haxelib name="flixel-addons" />
+    <haxelib name="flixel-ui" />
 
-    <!-- ===============================================================
-         ASSETS + MOD SUPPORT
-    ================================================================== -->
-    <assets path="assets" rename="assets" exclude="*.psd" />
-    <assets path="mods" rename="mods" />
-    <assets path="save" rename="save" if="desktop" />
+    <!-- LLua support (Lua scripts) -->
+    <haxelib name="lua-ffi" unless="html5" />
 
-    <!-- Allow external mod loading -->
-    <haxedef name="MOD_SUPPORT" />
+    <!-- HScript support -->
+    <haxelib name="hscript" />
 
-    <!-- ===============================================================
+    <!-- Allow dynamic class loading -->
+    <haxedef name="DYNAMIC" />
+
+    <!-- Enable FlxRuntimeShader -->
+    <haxedef name="FLX_RENDER_SHADER" />
+
+    <!-- For faster builds -->
+    <haxedef name="HXCPP_API_LEVEL" value="400" />
+
+    <!-- ==========================================================
+         SOURCE CODE
+         ========================================================== -->
+    <source path="source" />
+
+    <!-- Allow mods to load dynamically -->
+    <haxedef name="ALLOW_MODS" />
+
+    <!-- ==========================================================
+         ASSETS
+         ========================================================== -->
+
+    <!-- BASE ASSETS -->
+    <assets path="assets/images"   rename="images"    embed="false" />
+    <assets path="assets/sounds"   rename="sounds"    embed="false" />
+    <assets path="assets/music"    rename="music"     embed="false" />
+    <assets path="assets/fonts"    rename="fonts"     embed="false" />
+    <assets path="assets/data"     rename="data"      embed="false" />
+    <assets path="assets/shaders"  rename="shaders"   embed="false" />
+    <assets path="assets/characters" rename="characters" embed="false" />
+    <assets path="assets/stages"   rename="stages"    embed="false" />
+
+    <!-- PRELOAD (title graphics, splash logos, font files) -->
+    <assets path="preload" embed="true" />
+
+    <!-- ==========================================================
+         MODS
+         ========================================================== -->
+    <!-- Mods are NOT embedded so users can modify them -->
+    <assets path="mods" rename="mods" embed="false" include="*" />
+
+    <!-- ==========================================================
          ICONS
-    ================================================================== -->
-    <icon path="assets/icons/icon.png" />
+         ========================================================== -->
+    <icon path="assets/icon/icon.png" />
 
-    <!-- ===============================================================
-         PLATFORM RULES
-    ================================================================== -->
+    <!-- ==========================================================
+         PLATFORM SPECIFICS
+         ========================================================== -->
 
     <!-- WINDOWS -->
     <section if="windows">
-        <app file="HybridEngine" />
+        <haxedef name="HXCPP_STACK_TRACE" />
+        <window fullscreen="false" />
     </section>
 
-    <!-- HTML5 -->
+    <!-- HTML5 SUPPORT -->
     <section if="html5">
-        <haxedef name="webgl" />
-        <haxedef name="lime-webgl2" />
-        <haxedef name="openfl-html5" />
+        <window fps="60" />
+        <haxedef name="ENABLE_WEBGL" />
+        <haxedef name="ACTIVATE_DESKTOP_MODE" />
     </section>
 
-    <!-- ANDROID -->
-    <section if="android">
-        <android target-sdk-version="33" />
-        <haxedef name="android-internal-mods" />
+    <!-- LINUX / MACOS -->
+    <section if="linux || mac">
+        <haxedef name="HXCPP_STACK_TRACE" />
     </section>
 
-    <!-- MAC + LINUX / CASE CORRECTION -->
-    <haxedef name="casefold" />
+    <!-- ==========================================================
+         SHADERS COMPILATION
+         ========================================================== -->
+    <haxeflag name="-Dlegacy" />
+    <haxedef name="openfl-disable-memory" />
+    <haxedef name="shader-inline" />
 
+    <!-- Allow reading/writing files -->
+    <haxedef name="sys" />
+
+    <!-- Animate ZIP & Folder extraction support -->
+    <haxedef name="ALLOW_ANIMATE" />
+
+    <!-- ==========================================================
+         DONE
+         ========================================================== -->
 </project>

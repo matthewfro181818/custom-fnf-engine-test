@@ -1,32 +1,34 @@
 package play;
 
-import backend.UnifiedEvent;
-import backend.Conductor;
-import flixel.FlxG;
+import backend.events.*;
+import backend.events.UnifiedEvent;
 
 class EventManager {
     public var ps:PlayState;
     public var events:Array<UnifiedEvent>;
-    public var index:Int = 0;
 
     public function new(ps:PlayState) {
         this.ps = ps;
         events = [];
     }
 
-    public function load(events:Array<UnifiedEvent>) {
-        this.events = events;
-        index = 0;
+    public function load(e:Array<UnifiedEvent>) {
+        events = e.copy();
     }
 
-    public function update(songPos:Float) {
-        while (index < events.length && songPos >= events[index].time) {
-            trigger(events[index]);
-            index++;
+    public function update(songTime:Float) {
+        while (events.length > 0 && songTime >= events[0].time) {
+            var e = events.shift();
+            dispatch(e);
         }
     }
 
-    public function trigger(ev:UnifiedEvent) {
-        UnifiedEventDispatcher.dispatch(ps, ev);
+    public function dispatch(e:UnifiedEvent) {
+        var h = EventRegistry.get(e.name);
+        
+        if (h != null)
+            h(ps, e.params);
+
+        ps.scriptManager.callEvent(e.name, e.params);
     }
 }

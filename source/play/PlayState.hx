@@ -2,114 +2,153 @@ package play;
 
 import flixel.FlxG;
 import flixel.FlxState;
+
 import backend.Conductor;
-import backend.ChartLoader;
+import backend.chart.ChartLoader;
+import backend.chart.ChartData;
 
 class PlayState extends FlxState {
-    // Core systems
-    public var stageManager:StageManager;
-    public var characterManager:CharacterManager;
-    public var songManager:SongManager;
-    public var noteManager:NoteManager;
-    public var eventManager:EventManager;
-    public var cameraManager:CameraManager;
-    public var uiManager:UIManager;
-    public var inputManager:InputManager;
-    public var scriptManager:ScriptManager;
-
-    // Only the player uses AutoPlayer
-    public var autoPlayer:AutoPlayer;
-
-    // Song info
-    public var songName:String = "test";
-    public var modName:String = "mod";
+    // Core info
+    public var modName:String;
+    public var songName:String;
     public var downscroll:Bool = false;
 
-    var curBeat:Int = 0;
-    var curStep:Int = 0;
+    // Managers
+    public var characterManager:CharacterManager;
+    public var stageManager:StageManager;
+    public var audioManager:AudioManager;
+    public var scriptManager:ScriptManager;
+    public var cameraManager:CameraManager;
+    public var noteManager:NoteManager;
+    public var uiManager:UIManager;
+    public var autoPlayer:AutoPlayer;
+    public var postFX:PostFXManager;
+    public var input:InputManager;
+    public var eventManager:EventManager;
+
+    // Chart
+    public var chart:ChartData;
+
+    // Timing
+    private var beat:Int = 0;
+    private var step:Int = 0;
+
+    // =====================================================================
+    // CREATE
+    // =====================================================================
 
     override public function create() {
         super.create();
 
-        // Initialize managers
-        stageManager     = new StageManager(this);
-        characterManager = new CharacterManager(this);
-        songManager      = new SongManager(this);
-        noteManager      = new NoteManager(this);
-        eventManager     = new EventManager(this);
-        cameraManager    = new CameraManager(this);
-        uiManager        = new UIManager(this);
-        inputManager     = new InputManager();
-        scriptManager    = new ScriptManager(this);
-        autoPlayer       = new AutoPlayer(this, 1);
+        // Default values (normally set externally)
+        if (modName == null) modName = "default";
+        if (songName == null) songName = "tutorial";
+        downscroll = FlxG.save.data.downscroll ?? false;
 
-        // Load scripts before stage/characters
+        // -----------------------------
+        // Load chart
+        // -----------------------------
+        chart = ChartLoader.load(modName, songName);
+        Conductor.changeBPM(chart.bpm);
+
+        // -----------------------------
+        // Managers
+        // -----------------------------
+        scriptManager = new ScriptManager(this);
+        cameraManager = new CameraManager(this);
+        stageManager = new StageManager(this);
+        characterManager = new CharacterManager(this);
+        audioManager = new AudioManager(this);
+        noteManager = new NoteManager(this);
+        uiManager = new UIManager(this);
+        autoPlayer = new AutoPlayer(this, false);
+        postFX = new PostFXManager(this);
+        input = new InputManager(this);
+        eventManager = new EventManager(this);
+
+        // -----------------------------
+        // Stage + characters
+        // -----------------------------
+        stageManager.loadStage("defaultStage");
+        characterManager.loadCharacters(modName, songName);
+
+        // -----------------------------
+        // Scripts
+        // -----------------------------
         scriptManager.loadScripts();
         scriptManager.callCreate();
 
-        // Stage
-        stageManager.loadStage("default");
-
-        // Characters (uses JSON)
-        characterManager.loadCharacter("dad",  "mods/" + modName + "/characters/dad.json");
-        characterManager.loadCharacter("bf",   "mods/" + modName + "/characters/bf.json");
-
-        // Chart + Song
-        var chart = ChartLoader.load("mods/" + modName + "/data/" + songName + "/chart.json");
+        // -----------------------------
+        // Notes + Events
+        // -----------------------------
         noteManager.loadChart(chart);
         eventManager.load(chart.events);
 
-        // Song metadata
-        var songJson = haxe.Json.parse(sys.io.File.getContent("mods/" + modName + "/data/" + songName + "/" + songName + ".json"));
-        songManager.songData = songJson;
-        Conductor.bpm = songJson.bpm;
-        Conductor.recalcTimes();
+        // -----------------------------
+        // Audio
+        // -----------------------------
+        audioManager.loadSong(modName, songName);
+        audioManager.onSongEnd = () -> endSong();
 
-        // Start music
-        songManager.startSong();
+        // -----------------------------
+        // Start song
+        // -----------------------------
+        Conductor.songPosition = 0;
+        audioManager.start();
 
         scriptManager.callCreatePost();
     }
 
-    override public function update(elapsed:Float) {
-        // Conductor updates timing
-        Conductor.update(elapsed);
+    // =====================================================================
+    // UPDATE
+    // =====================================================================
 
-        // Managers update
-        cameraManager.update(elapsed);
+    override public function update(elapsed:Float) {
+        super.update(elapsed);
+
+        Conductor.update(elapsed);
+        input.update();
+
+        // Order matters
+        scriptManager.update(elapsed);
         stageManager.update(elapsed);
+        cameraManager.update(elapsed);
         characterManager.update(elapsed);
         noteManager.update(elapsed);
         uiManager.update(elapsed);
-        scriptManager.update(elapsed);
-        eventManager.update(Conductor.songPosition);
+        postFX.update(elapsed);
+        eventManager.update();
         autoPlayer.update(elapsed);
+        audioManager.update(elapsed);
 
-        // Beat and Step logic
-        var newStep = Std.int(Conductor.songPosition / Conductor.stepCrochet);
-        if (newStep > curStep) {
-            curStep = newStep;
-            stepHit();
+        // Beat / Step logic
+        updateBeatStep();
 
-            if (curStep % 4 == 0) {
-                curBeat = Std.int(curStep / 4);
-                beatHit();
-            }
+        scriptManager.callUpdatePost(elapsed);
+    }
+
+    private function updateBeatStep() {
+        var curBeat = Conductor.curBeat;
+        var curStep = Conductor.curStep;
+
+        if (curBeat != beat) {
+            beat = curBeat;
+            scriptManager.beatHit(beat);
+            stageManager.beatHit(beat);
         }
 
-        super.update(elapsed);
+        if (curStep != step) {
+            step = curStep;
+            scriptManager.stepHit(step);
+        }
     }
 
-    // ================
-    // FRAME CALLBACKS
-    // ================
-    public function beatHit() {
-        stageManager.beatHit(curBeat);
-        characterManager.beatHit(curBeat);
-        scriptManager.beatHit(curBeat);
-    }
+    // =====================================================================
+    // END SONG
+    // =====================================================================
 
-    public function stepHit() {
-        scriptManager.stepHit(curStep);
+    public function endSong() {
+        scriptManager.callEvent("songEnd", []);
+        FlxG.switchState(new play.PlayState()); // TEMPORARY
     }
 }

@@ -47,6 +47,10 @@ inputManager.botplayEnabled = botplay;
         uiManager.update(elapsed);
 
         super.update(elapsed);
+
+        autoPlayer1.update(elapsed);
+        autoPlayer2.update(elapsed); // Optional: CPU-opponent bot
+
     }
 
     override public function beatHit() {

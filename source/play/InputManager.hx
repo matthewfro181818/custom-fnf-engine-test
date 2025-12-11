@@ -10,14 +10,15 @@ class InputManager {
         [FlxG.keys.justPressed.D], // 3
     ];
 
-    public function getActiveLanes():Array<Int> {
-        var arr = [];
-        for (i in 0...4) {
-            if (lanePressed(i))
-                arr.push(i);
-        }
-        return arr;
-    }
+public function getActiveLanes():Array<Int> {
+    // If botplay is on, ignore physical keys
+    if (botplayEnabled)
+        return [];
+
+    var arr = [];
+    for (i in 0...4) if (lanePressed(i)) arr.push(i);
+    return arr;
+}
 
     inline function lanePressed(i:Int):Bool {
         return keyLanes[i][0];

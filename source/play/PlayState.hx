@@ -1,30 +1,40 @@
 package play;
 
-class PlayState extends MusicBeatState {
+import flixel.FlxG;
+import flixel.FlxState;
+import backend.Conductor;
+
+class PlayState extends FlxState {
     public var songManager:SongManager;
     public var noteManager:NoteManager;
-    public var characterManager:CharacterManager;
     public var stageManager:StageManager;
+    public var characterManager:CharacterManager;
     public var uiManager:UIManager;
+    public var eventManager:EventManager;
+    public var cutsceneManager:CutsceneManager;
+    public var scriptManager:ScriptManager;
     public var autoPlayer1:AutoPlayer;
     public var autoPlayer2:AutoPlayer;
-    public var eventManager:EventManager;
 
-    override function create() {
-        songManager = new SongManager(this);
-        stageManager = new StageManager(this);
-        characterManager = new CharacterManager(this);
-        noteManager = new NoteManager(this);
-        eventManager = new EventManager(this);
-        uiManager = new UIManager(this);
-
+    override public function create() {
+        songManager       = new SongManager(this);
+        stageManager      = new StageManager(this);
+        characterManager  = new CharacterManager(this);
+        noteManager       = new NoteManager(this);
+        eventManager      = new EventManager(this);
+        uiManager         = new UIManager(this);
+        cutsceneManager   = new CutsceneManager(this);
+        scriptManager     = new ScriptManager(this);
+        
         autoPlayer1 = new AutoPlayer(this, 1);
         autoPlayer2 = new AutoPlayer(this, 2);
 
         super.create();
     }
 
-    override function update(elapsed:Float) {
+    override public function update(elapsed:Float) {
+        Conductor.update(elapsed);
+
         songManager.update(elapsed);
         noteManager.update(elapsed);
         eventManager.update(elapsed);
@@ -35,14 +45,8 @@ class PlayState extends MusicBeatState {
         super.update(elapsed);
     }
 
-    override function beatHit() {
-        super.beatHit();
-        stageManager.beatHit();
-        characterManager.beatHit();
-    }
-
-    override function stepHit() {
-        super.stepHit();
-        eventManager.stepHit();
+    override public function beatHit() {
+        stageManager.beatHit(Conductor.songPosition);
+        characterManager.beatHit(Conductor.songPosition);
     }
 }

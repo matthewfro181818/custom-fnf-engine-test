@@ -3,58 +3,113 @@ package play;
 import flixel.FlxG;
 import flixel.FlxState;
 import backend.Conductor;
+import backend.ChartLoader;
 
 class PlayState extends FlxState {
-    public var songManager:SongManager;
-    public var noteManager:NoteManager;
+    // Core systems
     public var stageManager:StageManager;
     public var characterManager:CharacterManager;
-    public var uiManager:UIManager;
+    public var songManager:SongManager;
+    public var noteManager:NoteManager;
     public var eventManager:EventManager;
-    public var cutsceneManager:CutsceneManager;
+    public var cameraManager:CameraManager;
+    public var uiManager:UIManager;
+    public var inputManager:InputManager;
     public var scriptManager:ScriptManager;
-    public var autoPlayer1:AutoPlayer;
-    public var autoPlayer2:AutoPlayer;
+
+    // Only the player uses AutoPlayer
+    public var autoPlayer:AutoPlayer;
+
+    // Song info
+    public var songName:String = "test";
+    public var modName:String = "mod";
+    public var downscroll:Bool = false;
+
+    var curBeat:Int = 0;
+    var curStep:Int = 0;
 
     override public function create() {
-        songManager       = new SongManager(this);
-        stageManager      = new StageManager(this);
-        characterManager  = new CharacterManager(this);
-        noteManager       = new NoteManager(this);
-        eventManager      = new EventManager(this);
-        uiManager         = new UIManager(this);
-        cutsceneManager   = new CutsceneManager(this);
-        scriptManager     = new ScriptManager(this);
-        
-autoPlayer1 = new AutoPlayer(this, 1);
-autoPlayer2 = new AutoPlayer(this, 2);
-
-// Enable Botplay? Player chooses in menu
-autoPlayer1.setEnabled(botplay);
-inputManager.botplayEnabled = botplay;
-
         super.create();
+
+        // Initialize managers
+        stageManager     = new StageManager(this);
+        characterManager = new CharacterManager(this);
+        songManager      = new SongManager(this);
+        noteManager      = new NoteManager(this);
+        eventManager     = new EventManager(this);
+        cameraManager    = new CameraManager(this);
+        uiManager        = new UIManager(this);
+        inputManager     = new InputManager();
+        scriptManager    = new ScriptManager(this);
+        autoPlayer       = new AutoPlayer(this, 1);
+
+        // Load scripts before stage/characters
+        scriptManager.loadScripts();
+        scriptManager.callCreate();
+
+        // Stage
+        stageManager.loadStage("default");
+
+        // Characters (uses JSON)
+        characterManager.loadCharacter("dad",  "mods/" + modName + "/characters/dad.json");
+        characterManager.loadCharacter("bf",   "mods/" + modName + "/characters/bf.json");
+
+        // Chart + Song
+        var chart = ChartLoader.load("mods/" + modName + "/data/" + songName + "/chart.json");
+        noteManager.loadChart(chart);
+        eventManager.load(chart.events);
+
+        // Song metadata
+        var songJson = haxe.Json.parse(sys.io.File.getContent("mods/" + modName + "/data/" + songName + "/" + songName + ".json"));
+        songManager.songData = songJson;
+        Conductor.bpm = songJson.bpm;
+        Conductor.recalcTimes();
+
+        // Start music
+        songManager.startSong();
+
+        scriptManager.callCreatePost();
     }
 
     override public function update(elapsed:Float) {
+        // Conductor updates timing
         Conductor.update(elapsed);
 
-        songManager.update(elapsed);
+        // Managers update
+        cameraManager.update(elapsed);
+        stageManager.update(elapsed);
+        characterManager.update(elapsed);
         noteManager.update(elapsed);
-        eventManager.update(elapsed);
-        autoPlayer1.update(elapsed);
-        autoPlayer2.update(elapsed);
         uiManager.update(elapsed);
+        scriptManager.update(elapsed);
+        eventManager.update(Conductor.songPosition);
+        autoPlayer.update(elapsed);
+
+        // Beat and Step logic
+        var newStep = Std.int(Conductor.songPosition / Conductor.stepCrochet);
+        if (newStep > curStep) {
+            curStep = newStep;
+            stepHit();
+
+            if (curStep % 4 == 0) {
+                curBeat = Std.int(curStep / 4);
+                beatHit();
+            }
+        }
 
         super.update(elapsed);
-
-        autoPlayer1.update(elapsed);
-        autoPlayer2.update(elapsed); // Optional: CPU-opponent bot
-
     }
 
-    override public function beatHit() {
-        stageManager.beatHit(Conductor.songPosition);
-        characterManager.beatHit(Conductor.songPosition);
+    // ================
+    // FRAME CALLBACKS
+    // ================
+    public function beatHit() {
+        stageManager.beatHit(curBeat);
+        characterManager.beatHit(curBeat);
+        scriptManager.beatHit(curBeat);
+    }
+
+    public function stepHit() {
+        scriptManager.stepHit(curStep);
     }
 }

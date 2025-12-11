@@ -12,9 +12,31 @@ class StageManager {
         this.ps = ps;
     }
 
-    public function loadStage(name:String, instant:Bool = false) {
-        stage = StageParser.load(name);
-        stage.instantiate(ps);
+    public function loadStage(name:String) {
+        var path = Paths.stageJson(ps.modName, name);
+        config = Json.parse(File.getContent(path));
+
+        loadCamera(config.camera);
+        loadLayers(config.layers);
+        loadPost(config.post);
+        loadScript(config.script);
+    }
+
+    function loadLayers(arr:Array<Dynamic>) {
+        for (l in arr) {
+            switch(l.type) {
+                case "sprite":
+                    addSprite(l);
+                case "animated":
+                    addAnimated(l);
+                case "atlas":
+                    addAtlas(l);
+                case "animate":
+                    addAnimateSymbol(l);
+                case "model3d":
+                    add3DModel(l);
+            }
+        }
     }
 
     public function beatHit(curBeat:Int) {

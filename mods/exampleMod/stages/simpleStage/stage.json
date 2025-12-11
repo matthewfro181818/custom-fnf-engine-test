@@ -1,0 +1,15 @@
+{
+  "background": "stage.png",
+
+  "camera": {
+    "defaultZoom": 1.0,
+    "bounds": [-9999, -9999, 9999, 9999]
+  },
+
+  "post": {
+    "vignette": 0.0,
+    "bloom": 0.0,
+    "chromatic": 0.0,
+    "crt": false
+  }
+}

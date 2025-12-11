@@ -1,0 +1,15 @@
+{
+    "chart": {
+        "notes": [
+            { "time": 500, "lane": 4, "sustain": 0, "type": "" },
+            { "time": 1000, "lane": 5, "sustain": 0, "type": "" },
+            
+            { "time": 1500, "lane": 0, "sustain": 0, "type": "" },
+            { "time": 2000, "lane": 1, "sustain": 0, "type": "" }
+        ],
+        "events": [
+            { "time": 0, "name": "camera flash", "params": ["16777215", "1"] },
+            { "time": 2500, "name": "add camera zoom", "params": ["0.1", "0.3"] }
+        ]
+    }
+}

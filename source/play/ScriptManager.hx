@@ -1,71 +1,201 @@
 package play;
 
-import play.script.ScriptBase;
-import play.script.LuaScript;
-import play.script.HScriptModchart;
+import haxe.ds.StringMap;
+import haxe.Json;
+import sys.FileSystem;
+import sys.io.File;
+
+import util.Paths;
+
+#if LUA
+import llua.Lua;
+import llua.LuaL;
+#end
+
+import hscript.Parser;
+import hscript.Interp;
 
 class ScriptManager {
     public var ps:PlayState;
-    public var scripts:Array<ScriptBase> = [];
+
+    var luaScripts:Array<LuaScript> = [];
+    var hxsScripts:Array<HScript> = [];
 
     public function new(ps:PlayState) {
         this.ps = ps;
     }
 
+    // =======================================================================
+    //  LOAD SCRIPTS
+    // =======================================================================
+
     public function loadScripts() {
-        loadFolder("mods/" + ps.modName + "/scripts/");
-        loadFolder("mods/" + ps.modName + "/data/" + ps.songName + "/");
-        loadFolder("mods/" + ps.modName + "/stages/");
+        loadSongScripts();
+        loadStageScripts();
+        loadModScripts();
+        loadCharacterScripts();
     }
 
-    function loadFolder(path:String) {
-        if (!sys.FileSystem.exists(path))
-            return;
+    // SONG MODCHART SCRIPTS
+    private function loadSongScripts() {
+        var name = ps.songName;
+        var mod  = ps.modName;
 
-        for (file in sys.FileSystem.readDirectory(path)) {
-            if (file.endsWith(".lua"))
-                scripts.push(new LuaScript(ps, path + file));
+        var luaPath = Paths.modOrAsset(mod, "data/" + name + "/" + name + ".lua");
+        var hxPath  = Paths.modOrAsset(mod, "data/" + name + "/" + name + ".hx");
 
-            if (file.endsWith(".hx") || file.endsWith(".hscript"))
-                scripts.push(new HScriptModchart(ps, path + file));
+        if (luaPath != null) loadLua(luaPath);
+        if (hxPath  != null) loadHScript(hxPath);
+    }
+
+    // STAGE-SPECIFIC SCRIPT (loaded via StageManager)
+    private function loadStageScripts() {
+        if (ps.stageManager.script != null) {
+            addHScript(ps.stageManager.script);
         }
     }
 
-    // Script lifecycle ---------------------------------------------------
+    // GLOBAL MOD SCRIPTS
+    private function loadModScripts() {
+        var folder:String = "mods/" + ps.modName + "/scripts/";
 
-    public function callCreate() {
-        for (s in scripts) s.onCreate();
-        for (s in scripts) s.onCreatePost();
+        if (!FileSystem.exists(folder)) return;
+
+        var list = FileSystem.readDirectory(folder);
+        for (file in list) {
+            if (file.endsWith(".lua")) loadLua(folder + file);
+            if (file.endsWith(".hx"))  loadHScript(folder + file);
+        }
     }
+
+    // CHARACTER-SPECIFIC SCRIPTS
+    private function loadCharacterScripts() {
+        for (char in ps.characterManager.characters) {
+            if (char.scriptPath != null) {
+                loadHScript(char.scriptPath);
+            }
+        }
+    }
+
+    // =======================================================================
+    // LUA LOADER
+    // =======================================================================
+
+    private function loadLua(path:String) {
+        #if LUA
+        var lua = new LuaScript(path, ps);
+        luaScripts.push(lua);
+        #else
+        trace("[ScriptManager] LUA disabled, skipping: " + path);
+        #end
+    }
+
+    // =======================================================================
+    // HSCRIPT LOADER
+    // =======================================================================
+
+    private function loadHScript(path:String) {
+        try {
+            var parser = new Parser();
+            var code = File.getContent(path);
+
+            var expr = parser.parseString(code);
+            var interp = new Interp();
+
+            injectHScriptAPI(interp);
+
+            interp.execute(expr);
+            hxsScripts.push(new HScript(interp));
+        } catch(e:Dynamic) {
+            trace("[ScriptManager] HScript error in: " + path + "\n" + e);
+        }
+    }
+
+    private function addHScript(script:StageScript) {
+        var interp = script.interp;
+        injectHScriptAPI(interp);
+        hxsScripts.push(new HScript(interp));
+    }
+
+    // =======================================================================
+    // UPDATE CALLBACKS
+    // =======================================================================
 
     public function update(elapsed:Float) {
-        for (s in scripts) s.onUpdate(elapsed);
+        callAll("onUpdate", [elapsed]);
+        callAll("onUpdatePost", [elapsed]);
     }
 
-    public function beatHit(curBeat:Int) {
-        for (s in scripts) s.onBeatHit(curBeat);
+    public function beatHit(beat:Int) {
+        callAll("onBeatHit", [beat]);
     }
 
-    public function stepHit(curStep:Int) {
-        for (s in scripts) s.onStepHit(curStep);
+    public function stepHit(step:Int) {
+        callAll("onStepHit", [step]);
     }
 
-    public function noteHit(lane:Int, type:String, sustain:Bool) {
-        for (s in scripts) s.onNoteHit(lane, type, sustain);
+    public function noteHit(id:Int, dir:Int, sus:Bool) {
+        callAll("onNoteHit", [id, dir, sus]);
     }
 
-    public function noteMiss(lane:Int, type:String) {
-        for (s in scripts) s.onNoteMiss(lane, type);
+    public function noteMiss(id:Int, dir:Int, sus:Bool) {
+        callAll("onNoteMiss", [id, dir, sus]);
     }
 
-    // Event override -----------------------------------------------------
+    public function callEvent(name:String, params:Array<String>) {
+        callAll("onEvent", [name, params]);
+    }
 
-    public function runEvent(name:String, params:Array<String>):Bool {
-        var handled = false;
-        for (s in scripts) {
-            if (s.onEvent(name, params))
-                handled = true;
-        }
-        return handled;
+    public function callCreate() {
+        callAll("onCreate", []);
+    }
+
+    public function callCreatePost() {
+        callAll("onCreatePost", []);
+    }
+
+    // =======================================================================
+    // SCRIPT EXECUTION WRAPPER
+    // =======================================================================
+
+    private function callAll(func:String, args:Array<Dynamic>) {
+        #if LUA
+        for (lua in luaScripts) lua.call(func, args);
+        #end
+
+        for (hx in hxsScripts) hx.call(func, args);
+    }
+
+    // =======================================================================
+    // INJECT API FOR HSCRIPT
+    // =======================================================================
+
+    private function injectHScriptAPI(i:Interp) {
+        // Core references
+        i.variables.set("ps", ps);
+
+        // Camera
+        i.variables.set("cam", ps.cameraManager);
+
+        // UI
+        i.variables.set("ui", ps.uiManager);
+
+        // Stage
+        i.variables.set("stage", ps.stageManager);
+
+        // Characters
+        i.variables.set("chars", ps.characterManager.characters);
+
+        // Notes
+        i.variables.set("notes", ps.noteManager);
+
+        // Audio
+        i.variables.set("audio", ps.audioManager);
+
+        // Events
+        i.variables.set("events", ps.eventManager);
+
+        // Helpers
+        i.variables.set("debug", function(x) trace("[HScript] " + x));
     }
 }

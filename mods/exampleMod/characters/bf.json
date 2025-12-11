@@ -1,66 +1,15 @@
 {
-    "name": "bf",
-    
-    "type": "png",              
-    "path": "bf.png",          
-
-    "scale": 1.0,
-    "position": [100, 200],
-    "camera_position": [0, 0],
-    "flip_x": false,
-
-    "health_icon": "bf",
-    "healthbar_colors": [0, 255, 128],
-
-    "offsets": {
-        "idle": [0, 0],
-        "singLEFT": [-10, 0],
-        "singDOWN": [0, 15],
-        "singUP": [0, -20],
-        "singRIGHT": [10, 0]
-    },
-
-    "animations": [
-        {
-            "name": "idle",
-            "anim": "idle",
-            "fps": 24,
-            "loop": true,
-            "frames": [0,1,2,3],
-            "offset": [0,0]
-        },
-        {
-            "name": "singLEFT",
-            "fps": 24,
-            "loop": false,
-            "frames": [4,5,6],
-            "offset": [-10,0]
-        }
-    ],
-
-    "spine": {
-        "json": "bf_skeleton.json",
-        "atlas": "bf.atlas",
-        "scale": 0.5
-    },
-
-    "animate": {
-        "library": "library.json",
-        "symbols": "symbols/",
-        "defaultSymbol": "bf"
-    },
-
-    "atlas": {
-        "json": "bfAtlas.json",
-        "image": "bf.png"
-    },
-
-    "model3d": {
-        "file": "bf_model.obj",
-        "scale": [1, 1, 1],
-        "rotation": [0, 0, 0],
-        "position": [0, 0, 0]
-    },
-
-    "script": "bfCharScript.hx"
+  "image": "bf/bf",
+  "scale": 1,
+  "healthicon": "bf",
+  "flip_x": false,
+  "position": [200, 300],
+  "camera_position": [0, 0],
+  "animations": [
+    { "anim": "idle", "name": "BF idle dance", "fps": 24, "loop": true, "indices": [], "offsets": [0, 0] },
+    { "anim": "singLEFT", "name": "BF left note", "fps": 24, "loop": false, "indices": [], "offsets": [0, 0] },
+    { "anim": "singDOWN", "name": "BF down note", "fps": 24, "loop": false, "indices": [], "offsets": [0, 0] },
+    { "anim": "singUP", "name": "BF up note", "fps": 24, "loop": false, "indices": [], "offsets": [0, 0] },
+    { "anim": "singRIGHT", "name": "BF right note", "fps": 24, "loop": false, "indices": [], "offsets": [0, 0] }
+  ]
 }

@@ -1,0 +1,13 @@
+{
+  "bpm": 120,
+  "scrollSpeed": 1.0,
+  "notes": [
+    { "time": 1000, "lane": 0, "sustain": 0, "mustPress": true },
+    { "time": 1500, "lane": 1, "sustain": 0, "mustPress": true },
+    { "time": 2000, "lane": 2, "sustain": 0, "mustPress": true },
+    { "time": 2500, "lane": 3, "sustain": 0, "mustPress": true }
+  ],
+  "events": [
+    { "time": 4000, "name": "chromatic", "params": ["0.1", "0.3"] }
+  ]
+}

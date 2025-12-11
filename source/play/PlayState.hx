@@ -26,8 +26,12 @@ class PlayState extends FlxState {
         cutsceneManager   = new CutsceneManager(this);
         scriptManager     = new ScriptManager(this);
         
-        autoPlayer1 = new AutoPlayer(this, 1);
-        autoPlayer2 = new AutoPlayer(this, 2);
+autoPlayer1 = new AutoPlayer(this, 1);
+autoPlayer2 = new AutoPlayer(this, 2);
+
+// Enable Botplay? Player chooses in menu
+autoPlayer1.setEnabled(botplay);
+inputManager.botplayEnabled = botplay;
 
         super.create();
     }

@@ -1,67 +1,84 @@
 package play;
 
-import objects.notes.Note;
 import backend.Conductor;
+import objects.notes.Note;
 
 class AutoPlayer {
     public var ps:PlayState;
     public var enabled:Bool = false;
-    public var player:Int; // 1 = P1, 2 = P2
 
-    public function new(ps:PlayState, player:Int) {
+    public var hitDelay:Float = 0;  // future expansion: latency simulation
+    public var imperfectMode:Bool = false;
+
+    public function new(ps:PlayState, enabled:Bool = false) {
         this.ps = ps;
-        this.player = player;
+        this.enabled = enabled;
     }
 
-    /**
-     * Toggle botplay on/off
-     */
-    public function setEnabled(v:Bool) {
-        enabled = v;
-        ps.uiManager.botplayText.visible = v;
-    }
+    // ================================================================
+    // MAIN UPDATE CALLED FROM PlayState.update()
+    // ================================================================
 
-    /**
-     * Main update loop
-     */
     public function update(elapsed:Float) {
+        // No global logic needed yet
+    }
+
+    // ================================================================
+    // NOTE LOGIC
+    // Called from NoteManager.update() on every active note
+    // ================================================================
+
+    public function updateNote(note:Note) {
         if (!enabled) return;
 
-        autoHitNotes();
+        // ONLY hit when note is in the hittable window
+        if (!note.canBeHit()) return;
+
+        var diff = Math.abs(Conductor.songPosition - note.data.time);
+
+        // Perfect: always hit once in SICK range
+        if (diff <= ps.noteManager.hitWindowSick) {
+            hit(note);
+        }
     }
 
-    /**
-     * Automatically hit all notes for this player.
-     */
-    function autoHitNotes() {
-        var nm = ps.noteManager;
+    // ================================================================
+    // HIT NOTE AUTOMATICALLY
+    // ================================================================
 
-        for (note in nm.activeNotes.members) {
-            if (note == null) continue;
+    private function hit(note:Note) {
+        if (note.wasHit) return;
 
-            // Only hit notes belonging to this player
-            if (note.mustPress != (player == 1))
-                continue;
+        note.wasHit = true;
 
-            // Already hit or missed
-            if (note.wasGoodHit || note.wasMissed)
-                continue;
+        // Remove from note group
+        ps.noteManager.notes.remove(note, true);
 
-            var diff = Conductor.songPosition - note.strumTime;
+        // Score and combo
+        ps.uiManager.addScore("sick");
 
-            // Perfect timing window (0ms)
-            if (Math.abs(diff) <= 10) {
-                // Force perfect hit
-                nm.dispatchPlayerHit(note, "sick");
-                note.wasGoodHit = true;
-            }
+        // Let scripts know
+        ps.scriptManager.noteHit(note.data.id, note.data.lane, note.data.sustain);
 
-            // Sustain notes get held automatically
-            if (note.isSustainNote) {
-                if (Conductor.songPosition >= note.strumTime) {
-                    nm.dispatchPlayerHit(note, "sick");
-                }
-            }
+        // Play animation on bf
+        var bf = ps.characterManager.get("bf");
+        if (bf != null) {
+            var anim = "sing" + note.getDirName();
+            bf.playAnim(anim, true);
         }
+
+        // Camera follow assist
+        ps.cameraManager.offset(
+            (note.data.lane == 0 ? -20 : (note.data.lane == 3 ? 20 : 0)),
+            0
+        );
+    }
+
+    // ================================================================
+    // CALLED FROM NoteManager AFTER MANUAL HIT
+    // ================================================================
+
+    public function onNoteHit(note:Note) {
+        // For debug or expansion logic
     }
 }

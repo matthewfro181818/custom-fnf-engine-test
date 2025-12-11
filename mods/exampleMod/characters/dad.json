@@ -1,0 +1,16 @@
+{
+    "type": "png",
+    "image": "dad",
+    "defaultAnim": "idle",
+
+    "animations": [
+        { "anim": "idle", "frames": [0], "fps": 24, "loop": true },
+        { "anim": "singLEFT", "frames": [1], "fps": 24, "loop": false },
+        { "anim": "singDOWN", "frames": [2], "fps": 24, "loop": false },
+        { "anim": "singUP",   "frames": [3], "fps": 24, "loop": false },
+        { "anim": "singRIGHT","frames": [4], "fps": 24, "loop": false }
+    ],
+
+    "position": [700, 200],
+    "camera_position": [0, 0]
+}
